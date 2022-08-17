@@ -121,7 +121,7 @@ class ReferralJob {
                         }
                         levelBonus += levelTotal * (bonusLevels[index] / 100)
                         bonus += levelBonus
-                        bonusDetails.push({ level: index, porcentage: bonusLevels?.[index], resellers: usersByReferral?.length, total: levelTotal, bonus: levelBonus })
+                        bonusDetails.push({ level: index, percentage: bonusLevels?.[index], resellers: usersByReferral?.length, total: levelTotal, bonus: levelBonus })
                         usersByReferral = newUsersByReferral
                     }
                 }
