@@ -43,7 +43,6 @@ class ReferralJob {
                 }
             })
             let referrals = await SqlDB.ReferralModel.findAll({
-                logging: console.log,
                 order: [
                     ['createdAt', 'DESC']
                 ], include: {
@@ -57,14 +56,11 @@ class ReferralJob {
                 }
             })
             referrals = referrals?.filter(referral => (referral?.referralRevunes?.length ?? 0) === 0)
-            console.log("count referrals:", referrals?.length)
             for (const referral of referrals) {
-                console.log("step:", 0)
                 let total = 0
                 let revune = 0
                 let revuneDetails = []
                 const contracts = await referral?.getContractReferredBy()
-                console.log("step:", 1)
                 for (const contract of contracts) {
                     const payments = await contract?.getContractPayments({
                         order: [
@@ -91,7 +87,6 @@ class ReferralJob {
                         revuneDetails.push({ contractId: contract.id, paymentId: payment.id, percentage, value, revune })
                     }
                 }
-                console.log("step:", 2)
                 let usersByReferral = await referral?.getReferredBy()
                 let bonus = 0
                 let bonusDetails = []
@@ -125,7 +120,6 @@ class ReferralJob {
                         usersByReferral = newUsersByReferral
                     }
                 }
-                console.log("step:", 3)
                 await referral.createReferralRevune({
                     date,
                     total,
@@ -133,12 +127,8 @@ class ReferralJob {
                     revuneDetails,
                     bonus,
                     bonusDetails
-                }, {
-                    logging: console.log
                 })
-                console.log("step:", 4)
             }
-            console.log("step:", 5)
         } catch (exception) {
             console.error(exception)
             this.logger.error(exception)
