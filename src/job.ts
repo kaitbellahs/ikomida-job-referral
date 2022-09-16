@@ -1,12 +1,4 @@
-#!/usr/bin/env node
-
-import {
-    RabbitMQ,
-    SqlDB,
-    DateTime,
-    Logger,
-    Types
-} from 'ikomida-shared';
+import { DBModels, Domain, Types, Utils, Logics } from "@ikomida/shared-backend";
 import {
     createRequire
 } from "module";
@@ -17,16 +9,16 @@ let {
 } = require("../package.json")
 name = name
     .replace(/^(@\S+\/)?(svelte-)?(\S+)/, '$3')
-    .replace(/^\w/, m => m.toUpperCase())
-    .replace(/-\w/g, m => m[1].toUpperCase())
+    .replace(/^\w/, (m: string) => m.toUpperCase())
+    .replace(/-\w/g, (m: string[]) => m[1].toUpperCase())
 
 class ReferralJob {
 
-    amqp
+    amqp: any
     logger
 
     constructor() {
-        this.logger = Logger.getInstance(name)
+        this.logger = Utils.Logger.getInstance(name)
     }
 
     async run() {
@@ -36,20 +28,21 @@ class ReferralJob {
             const thisYear = today.getFullYear()
             const stringDate = `${thisYear}-${thisMonth}-01`
             const date = new Date(stringDate)
-            const bonusLevels = await SqlDB.SettingModel.findOne({
+            const bonusLevelsModel = await DBModels.SettingModel.findOne({
                 where: {
                     name: 'ReferralBonusLevels',
 
                 }
             })
-            let referrals = await SqlDB.ReferralModel.findAll({
+            const bonusLevels = JSON.parse(bonusLevelsModel?.value ?? '[]') as []
+            let referrals = await DBModels.ReferralModel.findAll({
                 order: [
                     ['createdAt', 'DESC']
                 ], include: {
-                    model: SqlDB.ReferralRevuneModel,
+                    model: DBModels.ReferralRevuneModel,
                     where: {
                         date: {
-                            [SqlDB.Op.gte]: date
+                            [Domain.SqlDB.Op.gte]: date
                         }
                     },
                     required: false
@@ -59,19 +52,19 @@ class ReferralJob {
             for (const referral of referrals) {
                 let total = 0
                 let revune = 0
-                let revuneDetails = []
-                const contracts = await referral?.getContractReferredBy()
+                const revuneDetails = []
+                const contracts = await referral?.$get('contracts')
                 for (const contract of contracts) {
-                    const payments = await contract?.getContractPayments({
+                    const payments = await contract?.$get('contractPayments', {
                         order: [
                             ['confirmedDate', 'ASC']
                         ],
                         where: {
                             status: {
-                                [SqlDB.Op.in]: [Types.PaymentStatusTypes.Asaas.CONFIRMED, Types.PaymentStatusTypes.Asaas.AVAILABLE]
+                                [Domain.SqlDB.Op.in]: [Types.Types.TAsaasPaymentStatus.CONFIRMED, Types.Types.TAsaasPaymentStatus.RECEIVED]
                             },
                             confirmedDate: {
-                                [SqlDB.Op.lt]: DateTime?.parseAsaasDate(stringDate)
+                                [Domain.SqlDB.Op.lt]: Logics.DateTime?.parseAsaasDate(stringDate)
                             }
                         }
                     })
@@ -82,35 +75,35 @@ class ReferralJob {
                             percentage = 0.3
                         }
                         const payment = payments?.[totalPayments - 1]
-                        revune += payment.value * percentage
-                        total += payment.value
-                        revuneDetails.push({ contractId: contract.id, paymentId: payment.id, percentage, value, revune })
+                        revune += (payment?.value ?? 0) * percentage
+                        total += (payment?.value ?? 0)
+                        revuneDetails.push({ contractId: contract.id, paymentId: payment.id, percentage, total, revune })
                     }
                 }
-                let usersByReferral = await referral?.getReferredBy()
+                let usersByReferral = await referral?.$get('users')
                 let bonus = 0
-                let bonusDetails = []
+                const bonusDetails = []
                 for (let index = 0; index < (bonusLevels?.length ?? 0); index++) {
                     if ((usersByReferral?.length ?? 0) > 0) {
                         let levelBonus = 0
                         let levelTotal = 0
-                        let newUsersByReferral = []
+                        let newUsersByReferral: any[] = []
                         for (const userByReferral of usersByReferral) {
-                            const userReferral = await userByReferral?.getReferral()
-                            const userReferralRevenue = await userReferral?.getReferralRevunes({
+                            const userReferral = await userByReferral?.$get('referral')
+                            const userReferralRevenue = await userReferral?.$get('referralRevunes', {
                                 order: [
                                     ['createdAt', 'ASC']
                                 ],
                                 limit: 1,
                                 where: {
                                     createdAt: {
-                                        [SqlDB.Op.gte]: date
+                                        [Domain.SqlDB.Op.gte]: date
                                     }
 
                                 }
                             })
                             if ((userReferralRevenue?.length ?? 0) === 1) {
-                                levelTotal += userReferralRevenue[0].revune
+                                levelTotal += userReferralRevenue ? [0]?.revune ?? 0
                             }
                             newUsersByReferral = [...newUsersByReferral, ...await userReferral.getReferredBy()]
                         }
