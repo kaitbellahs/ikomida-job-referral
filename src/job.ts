@@ -87,10 +87,10 @@ class ReferralJob {
                     if ((usersByReferral?.length ?? 0) > 0) {
                         let levelBonus = 0
                         let levelTotal = 0
-                        let newUsersByReferral: any[] = []
+                        let newUsersByReferral: DBModels.UserModel[] = []
                         for (const userByReferral of usersByReferral) {
                             const userReferral = await userByReferral?.$get('referral')
-                            const userReferralRevenue = await userReferral?.$get('referralRevunes', {
+                            const userReferralRevenues: DBModels.ReferralRevuneModel[] | undefined = await userReferral?.$get('referralRevunes', {
                                 order: [
                                     ['createdAt', 'ASC']
                                 ],
@@ -102,10 +102,13 @@ class ReferralJob {
 
                                 }
                             })
-                            if ((userReferralRevenue?.length ?? 0) === 1) {
-                                levelTotal += userReferralRevenue ? [0]?.revune ?? 0
+                            if (userReferralRevenues && (userReferralRevenues?.length ?? 0) === 1) {
+                                levelTotal += userReferralRevenues?.[0].revune ?? 0
                             }
-                            newUsersByReferral = [...newUsersByReferral, ...await userReferral.getReferredBy()]
+                            const userReferredBy = await userReferral?.$get('users')
+                            if (userReferredBy) {
+                                newUsersByReferral = [...newUsersByReferral, ...userReferredBy]
+                            }
                         }
                         levelBonus += levelTotal * (bonusLevels[index] / 100)
                         bonus += levelBonus
@@ -113,7 +116,7 @@ class ReferralJob {
                         usersByReferral = newUsersByReferral
                     }
                 }
-                await referral.createReferralRevune({
+                await referral.$create('referralRevune', {
                     date,
                     total,
                     revune,
