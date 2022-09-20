@@ -24,7 +24,7 @@ kubectl -n ikomida-job delete deploy referral-job
 
 $prod = $false
 if($args.count -gt 1){
-    $prod=$args[1]==="prod"
+    $prod=$args[1] -eq "prod"
 }
 if($prod){
 kubectl apply -f k8s
