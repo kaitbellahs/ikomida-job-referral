@@ -9,7 +9,7 @@ spec:
   schedule: "0 0 15 * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 21600 # 60s * 60m * 6h
-  suspend: true
+  suspend: false
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
   jobTemplate:
@@ -26,11 +26,37 @@ spec:
             runAsNonRoot: true
           restartPolicy: OnFailure
           containers:
-            - image: hub.docker.internal:5000/ikomida/referral-job-image:latest
+            - image: us-central1-docker.pkg.dev/ikomida-prod/docker/referral-job-image:latest
               name: referral-job
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - all
+                privileged: false
+                readOnlyRootFilesystem: true
+              resources:
+                requests:
+                  cpu: "20m"
+                  memory: "200m"
+                limits:
+                  cpu: "40m"
+                  memory: "400m"
               env:
                 - name: NODE_ENV
-                  value: "development"
+                  value: "homologation"
+                - name: IKOMIDA_PRIVATEKEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: environment
+                      key: IKOMIDA_PRIVATEKEY
+                      optional: false
+                - name: IKOMIDA_PUBLICKEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: environment
+                      key: IKOMIDA_PUBLICKEY
+                      optional: false
                 - name: DBUSER
                   valueFrom:
                     secretKeyRef:
@@ -56,14 +82,3 @@ spec:
                     secretKeyRef:
                       name: environment
                       key: DBPORT
-                - name: PROJID
-                  valueFrom:
-                    secretKeyRef:
-                      name: environment
-                      key: PROJID
-                - name: GOOGLEADMIN
-                  valueFrom:
-                    secretKeyRef:
-                      name: environment
-                      key: googleAdmin
-                      optional: false
