@@ -26,7 +26,7 @@ spec:
             runAsNonRoot: true
           restartPolicy: OnFailure
           containers:
-            - image: us-central1-docker.pkg.dev/ikomida-prod/docker/referral-job-image:latest
+            - image: us-central1-docker.pkg.dev/ikomida-dev/docker/referral-job-image:latest
               name: referral-job
               securityContext:
                 allowPrivilegeEscalation: false
