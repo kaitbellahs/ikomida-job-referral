@@ -126,7 +126,6 @@ class ReferralJob {
                 })
             }
         } catch (exception) {
-            console.error(exception)
             this.logger.error(exception)
         }
     }
