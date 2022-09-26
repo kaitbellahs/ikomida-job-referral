@@ -24,7 +24,7 @@ docker build -t us-central1-docker.pkg.dev/$projectid/docker/referral-job-image:
 ThrowOnNativeFailure
 docker push us-central1-docker.pkg.dev/$projectid/docker/referral-job-image:latest
 ThrowOnNativeFailure
-kubectl -n ikomida-job delete deploy referral-job
+kubectl -n ikomida-job delete CronJob referral-job
 
 Get-ChildItem ".\k8s\" -Filter *.yaml | 
 Foreach-Object {
