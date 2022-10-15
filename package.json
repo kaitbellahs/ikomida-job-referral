@@ -1,6 +1,6 @@
 {
     "name": "ikomida-referral-job",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "ikomida referral job",
     "private": true,
     "module": "build/job.js",
