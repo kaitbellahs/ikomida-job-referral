@@ -17,6 +17,7 @@ class ReferralJob {
 
   async run() {
     try {
+      this.logger.error(`Referrals calculator started...!`)
       const today = new Date()
       const thisMonth = today.getMonth() + 1
       const thisYear = today.getFullYear()
